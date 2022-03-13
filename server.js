@@ -12,7 +12,9 @@ const upload = multer( {storage} );
 const app = express();
 const PORT = 5001;
 
-
+// // public 으로 접근 가능 함
+// app.use(express.static("uploads"));
+app.use('/uploads', express.static("uploads"));
 /*
 upload.single("imageTest") 라는 미들웨어 추가해줌으로서
 이미지 받을 수 있다
