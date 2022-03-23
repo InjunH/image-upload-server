@@ -35,6 +35,7 @@ userRouter.post("/register", async (req, res) => {
 userRouter.patch("/login", async (req, res) => {
   try {
     const user = await User.findOne({ username: req.body.username });
+    if (!user) throw new Error("가입되지 않은 이메일 입니다");
     const isValid = await compare(req.body.password, user.hashedPassWord);
     if (!isValid) throw new Error("입력하신 정보가 올바르지 않습니다");
 
@@ -48,6 +49,7 @@ userRouter.patch("/login", async (req, res) => {
       message: "user validated",
       sessionId: session._id,
       name: user.name,
+      userId: user._id,
     });
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -67,5 +69,26 @@ userRouter.patch("/logout", async (req, res) => {
     console.log(error);
     res.status(400).json({ message: error.message });
   }
+});
+
+userRouter.get("/me", (req, res) => {
+  try {
+    console.log(req.user);
+    if (!req.user) throw new Error("권한이 없습니다");
+    res.json({
+      message: "user validated",
+      sessionId: req.headers.sessionid,
+      name: req.user.name,
+      userId: req.user._id,
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(400).json({ message: err.message });
+  }
+});
+
+userRouter.get("/me2", (req, res) => {
+  // 본인의 사진들만 return
+  // public == false
 });
 module.exports = { userRouter };
