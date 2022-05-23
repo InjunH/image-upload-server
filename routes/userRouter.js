@@ -58,7 +58,7 @@ userRouter.patch("/login", async (req, res) => {
 
 userRouter.patch("/logout", async (req, res) => {
   try {
-    console.log(req.user);
+    // console.log(req.user);
     if (!req.user) throw Error("invalid sessionid");
     await User.updateOne(
       { _id: req.user.id },
@@ -73,7 +73,7 @@ userRouter.patch("/logout", async (req, res) => {
 
 userRouter.get("/me", (req, res) => {
   try {
-    console.log(req.user);
+    // console.log(req.user);
     if (!req.user) throw new Error("권한이 없습니다");
     res.json({
       message: "user validated",
