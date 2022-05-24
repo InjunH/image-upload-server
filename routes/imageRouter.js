@@ -7,14 +7,65 @@ const { promisify } = require("util");
 const mongoose = require("mongoose");
 const { v4: uuid } = require("uuid");
 const mime = require("mime-types");
+const { contentType } = require("mime-types");
+const { s3, getSignedUrl } = require("../aws");
 
-imageRouter.post("presigned", async (req, res) => {
+/*
+2. 이미지 최적화 upgrade
+api 추가
+  contentType client 에서 받아야 함
+  이미지 여러장 받을 수 있음 
+
+  이때 getSignedUrl을 여러번 호출 할수 밖에 없음
+
+  client 가 s3에 바로 저장을 요청하고 db에 저장할 정보만 따로 server에 보내준다
+*/
+imageRouter.post("/presigned", async (req, res) => {
   try {
-  } catch (error) {}
+    if (!req.user) throw new Error("권한이 없습니다.");
+    const { contentTypes } = req.body;
+    if (!Array.isArray(contentTypes)) throw new Error("invalid contentTypes");
+    const presignedData = await Promise.all(
+      contentTypes.map(async (contentTypes) => {
+        const imageKey = `${uuid()}.${mime.extension(contentType)}`;
+        const key = `raw/${imageKey}`;
+        const presigned = await getSignedUrl({ key });
+        return { imageKey, presigned };
+      })
+    );
+
+    return presignedData;
+  } catch (err) {
+    console.log(err);
+    res.status(400).json({ message: err.message });
+  }
 });
 
 imageRouter.post("/", upload.array("image", 30), async (req, res) => {
+  try {
+    if (!req.user) throw new Error("권한이 없습니다.");
+    const { images, public } = req.body;
+
+    const imageDocs = await Promise.all(
       images.map((image) =>
+        new Image({
+          user: {
+            _id: req.user.id,
+            name: req.user.name,
+            username: req.user.username,
+          },
+          public,
+          key: image.imageKey,
+          originalFileName: image.originalname,
+        }).save()
+      )
+    );
+
+    res.json(imageDocs);
+  } catch (err) {
+    console.log(err);
+    res.status(400).json({ message: err.message });
+  }
 });
 
 imageRouter.get("/", async (req, res) => {
