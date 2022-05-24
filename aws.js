@@ -6,8 +6,8 @@ const s3 = new aws.S3({
 });
 
 /* 
-1. 이미지 최적화 
-getSignedUrl
+1. 이미지 최적화 upgrade
+getSignedUrl 생성
   - presignedUrl 생성을 aws에 요청함
     - Expires : 1회성으로 요청하는 presignedUrl의 만료 시간 (초)
 */

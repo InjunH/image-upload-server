@@ -13,12 +13,8 @@ imageRouter.post("presigned", async (req, res) => {
   } catch (error) {}
 });
 
-imageRouter.post("/", upload.single("images"), async (req, res) => {
-  const image = await new Image({
-    key: req.file.filename,
-    originalFileName: req.file.originalname,
-  }).save();
-  res.json(image);
+imageRouter.post("/", upload.array("image", 30), async (req, res) => {
+      images.map((image) =>
 });
 
 imageRouter.get("/", async (req, res) => {
