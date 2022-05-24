@@ -12,13 +12,10 @@ const { s3, getSignedUrl } = require("../aws");
 
 /*
 2. 이미지 최적화 upgrade
-api 추가
-  contentType client 에서 받아야 함
-  이미지 여러장 받을 수 있음 
-
-  이때 getSignedUrl을 여러번 호출 할수 밖에 없음
-
-  client 가 s3에 바로 저장을 요청하고 db에 저장할 정보만 따로 server에 보내준다
+  - api 추가
+  - 앞에서 추가한 getSignedUrl을 이용하여 api 호출시 presignedData 만들어서 return 해줌
+  
+  - client 가 s3에 바로 저장을 요청하고 db에 저장할 정보만 따로 server에 보내준다
 */
 imageRouter.post("/presigned", async (req, res) => {
   try {
