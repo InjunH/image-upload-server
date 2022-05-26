@@ -12,7 +12,7 @@ const { s3 } = require("../aws");
 
 const storage = multerS3({
   s3,
-  bucket: "image-upload-ijhwang",
+  bucket: "test2-ij-image-upload",
   key: (req, file, cb) => {
     cb(null, `raw/${uuid()}.${mime.extension(file.mimetype)}`);
   },

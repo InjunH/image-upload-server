@@ -8,7 +8,8 @@ const mongoose = require("mongoose");
 const { v4: uuid } = require("uuid");
 const mime = require("mime-types");
 const { contentType } = require("mime-types");
-const { s3, getSignedUrl } = require("../aws");
+// const { s3, getSignedUrl } = require("../aws");
+const { s3 } = require("../aws");
 
 /*
 2. 이미지 최적화 upgrade
@@ -17,48 +18,76 @@ const { s3, getSignedUrl } = require("../aws");
   
   - client 가 s3에 바로 저장을 요청하고 db에 저장할 정보만 따로 server에 보내준다
 */
-imageRouter.post("/presigned", async (req, res) => {
-  try {
-    if (!req.user) throw new Error("권한이 없습니다.");
-    const { contentTypes } = req.body;
-    if (!Array.isArray(contentTypes)) throw new Error("invalid contentTypes");
-    const presignedData = await Promise.all(
-      contentTypes.map(async (contentTypes) => {
-        const imageKey = `${uuid()}.${mime.extension(contentType)}`;
-        const key = `raw/${imageKey}`;
-        const presigned = await getSignedUrl({ key });
-        return { imageKey, presigned };
-      })
-    );
+// imageRouter.post("/presigned", async (req, res) => {
+//   try {
+//     if (!req.user) throw new Error("권한이 없습니다.");
+//     const { contentTypes } = req.body;
+//     if (!Array.isArray(contentTypes)) throw new Error("invalid contentTypes");
+//     const presignedData = await Promise.all(
+//       contentTypes.map(async (contentTypes) => {
+//         const imageKey = `${uuid()}.${mime.extension(contentType)}`;
+//         const key = `raw/${imageKey}`;
+//         const presigned = await getSignedUrl({ key });
+//         return { imageKey, presigned };
+//       })
+//     );
 
-    return presignedData;
-  } catch (err) {
-    console.log(err);
-    res.status(400).json({ message: err.message });
-  }
-});
+//     res.json(presignedData);
+//   } catch (err) {
+//     console.log(err);
+//     res.status(400).json({ message: err.message });
+//   }
+// });
+
+// imageRouter.post("/", upload.array("image", 30), async (req, res) => {
+//   try {
+//     console.log("imageUpload");
+//     if (!req.user) throw new Error("권한이 없습니다.");
+//     const { images, public } = req.body;
+
+//     const imageDocs = await Promise.all(
+//       images.map((image) =>
+//         new Image({
+//           user: {
+//             _id: req.user.id,
+//             name: req.user.name,
+//             username: req.user.username,
+//           },
+//           public,
+//           key: image.imageKey,
+//           originalFileName: image.originalname,
+//         }).save()
+//       )
+//     );
+
+//     res.json(imageDocs);
+//   } catch (err) {
+//     console.log(err);
+//     res.status(400).json({ message: err.message });
+//   }
+// });
 
 imageRouter.post("/", upload.array("image", 30), async (req, res) => {
   try {
-    if (!req.user) throw new Error("권한이 없습니다.");
-    const { images, public } = req.body;
-
-    const imageDocs = await Promise.all(
-      images.map((image) =>
-        new Image({
+    // if (!req.user) throw new Error("권한이 없습니다.");
+    console.log(req.files);
+    const images = await Promise.all(
+      req.files.map(async (file) => {
+        console.log(file.key);
+        const image = await new Image({
           user: {
             _id: req.user.id,
             name: req.user.name,
             username: req.user.username,
           },
-          public,
-          key: image.imageKey,
-          originalFileName: image.originalname,
-        }).save()
-      )
+          public: req.body.public,
+          key: file.key.replace("raw/", ""),
+          originalFileName: file.originalname,
+        }).save();
+        return image;
+      })
     );
-
-    res.json(imageDocs);
+    res.json(images);
   } catch (err) {
     console.log(err);
     res.status(400).json({ message: err.message });
@@ -94,8 +123,8 @@ imageRouter.get("/:imageId", async (req, res) => {
       throw new Error("올바르지 않는 이미지id입니다.");
     const image = await Image.findOne({ _id: imageId });
     if (!image) throw new Error("해당 이미지는 존재 하지 않습니다.");
-    if (!image.public && (!req.user || req.user.id !== image.user.id))
-      throw new Error("권한이 없습니다.");
+    // if (!image.public && (!req.user || req.user.id !== image.user.id))
+    //   throw new Error("권한이 없습니다.");
     res.json(image);
   } catch (err) {
     console.log(err);
@@ -105,7 +134,7 @@ imageRouter.get("/:imageId", async (req, res) => {
 
 imageRouter.delete("/:imageId", async (req, res) => {
   try {
-    if (!req.user) throw new Error("권한이 없습니다.");
+    // if (!req.user) throw new Error("권한이 없습니다.");
     if (!mongoose.isValidObjectId(req.params.imageId))
       throw new Error("올바르지 않은 이미지id입니다.");
 
@@ -114,7 +143,7 @@ imageRouter.delete("/:imageId", async (req, res) => {
       return res.json({ message: "요청하신 사진은 이미 삭제되었습니다." });
     // await fileUnlink(`./uploads/${image.key}`);
     s3.deleteObject(
-      { Bucket: "image-upload-tutorial", Key: `raw/${image.key}` },
+      { Bucket: "test2-ij-image-upload", Key: `raw/${image.key}` },
       (error) => {
         if (error) throw error;
       }
